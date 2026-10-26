@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}Сводка по остаткам{% endblock %}
+{% block content %}
+<h1>Сводка по остаткам и заказам</h1>
+<p class="muted">Локальная панель: данные Ozon обновляются по запросу, собственный склад ведётся вручную.</p>
+
+<div class="summary">
+    <div class="summary-card">Доступно в Ozon<strong>{{ ozon_stock_total }}</strong></div>
+    <div class="summary-card">На собственном складе<strong>{{ own_stock_total }}</strong></div>
+    <div class="summary-card">Товарных строк заказов за 30 дней<strong>{{ orders_count }}</strong></div>
+</div>
+
+<section>
+    <h2>Синхронизация Ozon</h2>
+    {% if ozon_configured %}
+        <form method="post" action="{% url 'sync_ozon' %}">
+            {% csrf_token %}<button type="submit">Загрузить заказы и остатки</button>
+        </form>
+    {% else %}
+        <p>Добавьте Client ID и API-ключ в локальный файл <code>.env</code>, затем обновите страницу.</p>
+    {% endif %}
+    {% if last_sync %}
+        <p class="muted">Последняя успешная синхронизация: {{ last_sync.completed_at|date:"d.m.Y H:i" }}. Обновлено строк остатков: {{ last_sync.updated_stock_rows }}.</p>
+    {% else %}
+        <p class="muted">Синхронизаций пока не было.</p>
+    {% endif %}
+</section>
+
+<section>
+    <h2>Собственный склад</h2>
+    <form method="post" action="{% url 'save_own_stock' %}">
+        {% csrf_token %}
+        {{ own_stock_form.non_field_errors }}
+        {% for field in own_stock_form %}
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}{{ field.errors }}
+        {% endfor %}
+        <p><button type="submit">Сохранить остаток</button></p>
+    </form>
+</section>
+
+<section>
+    <h2>Остатки по товарам</h2>
+    {% if stocks %}
+        <table>
+            <thead><tr><th>Источник / склад</th><th>Артикул</th><th>Товар</th><th>Доступно</th><th>Резерв</th><th>Обновлено</th><th></th></tr></thead>
+            <tbody>
+            {% for stock in stocks %}
+                <tr>
+                    <td>{{ stock.get_source_display }} · {{ stock.warehouse }}</td>
+                    <td>{{ stock.sku }}</td>
+                    <td>{{ stock.product_name|default:"—" }}</td>
+                    <td>{{ stock.available_quantity }}</td>
+                    <td>{{ stock.reserved_quantity }}</td>
+                    <td>{{ stock.updated_at|date:"d.m.Y H:i" }}</td>
+                    <td>
+                        {% if stock.source == "own" %}
+                            <form class="inline" method="post" action="{% url 'delete_own_stock' stock.pk %}">
+                                {% csrf_token %}<button type="submit" aria-label="Удалить {{ stock.sku }}">Удалить</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Пока нет данных об остатках.</p>
+    {% endif %}
+</section>
+
+<section>
+    <h2>Последние заказы</h2>
+    {% if orders %}
+        <table>
+            <thead><tr><th>Дата</th><th>Номер заказа</th><th>Артикул</th><th>Товар</th><th>Кол-во</th><th>Статус</th></tr></thead>
+            <tbody>
+            {% for order in orders %}
+                <tr>
+                    <td>{{ order.created_at|date:"d.m.Y H:i" }}</td>
+                    <td>{{ order.posting_number|default:order.order_id }}</td>
+                    <td>{{ order.sku }}</td>
+                    <td>{{ order.product_name|default:"—" }}</td>
+                    <td>{{ order.quantity }}</td>
+                    <td>{{ order.status }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Заказов за выбранный период пока нет. Синхронизируйте Ozon, чтобы загрузить данные.</p>
+    {% endif %}
+</section>
+{% endblock %}

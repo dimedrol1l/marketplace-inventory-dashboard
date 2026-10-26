@@ -1,0 +1,9 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+db.sqlite3
+*.log
+.DS_Store
+cy19346_project/templates/signup.html

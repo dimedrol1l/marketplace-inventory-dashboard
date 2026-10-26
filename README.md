@@ -1,74 +1,95 @@
-# Marketplace Stock Dashboard
+# Дашборд остатков маркетплейса
 
-A small Django portfolio MVP for practicing database-backed web development and marketplace API integration. The dashboard combines recent Ozon FBS order lines, the latest Ozon stock balances, and stock quantities entered for a seller's own warehouses.
+Небольшое Django-приложение для учёта заказов и остатков продавца. Проект создан как практический MVP для работы с Django, базой данных и Seller API Ozon.
 
-## Features
+Дашборд показывает недавние заказы FBS и последние остатки Ozon, а также позволяет вручную вести остатки на собственных складах. Данные приложения хранятся локально в SQLite.
 
-- Read recent FBS postings and product stock balances from Ozon Seller API.
-- Store imported order lines and the latest stock balances in SQLite.
-- Add or update own-warehouse stock by warehouse name and seller SKU.
-- Compare available quantities from Ozon and own warehouses on one page.
-- Keep Ozon credentials in a local `.env` file instead of storing or displaying them in the application.
-- Use Django's built-in authentication; create the local dashboard user through Django's management command.
+## Возможности
 
-## Requirements
+- Загружать недавние отправления FBS и остатки товаров из Ozon Seller API.
+- Сохранять строки заказов и актуальные остатки в SQLite.
+- Добавлять, обновлять и удалять остатки собственных складов по названию склада и артикулу продавца.
+- Просматривать заказы и остатки Ozon и собственных складов на одной странице.
+- Входить в приложение через встроенную систему аутентификации Django.
+- Хранить учётные данные Ozon в локальном файле `.env`.
 
-- Python 3.10 or newer.
-- Ozon Seller API Client ID and API key for live synchronization. The application can also be explored locally without credentials; synchronization remains disabled until they are configured.
+Интеграция с Ozon работает в режиме чтения: приложение не меняет заказы или остатки в личном кабинете маркетплейса.
 
-## Setup
+## Требования
+
+- Python 3.10 или новее.
+- Client ID и API-ключ Ozon Seller API нужны только для живой синхронизации. Приложение и тесты можно запустить без них.
+
+## Установка и запуск
+
+Перейдите в каталог проекта и создайте виртуальное окружение:
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
+```
+
+Создайте локальный файл настроек:
+
+```bash
 cp .env.example .env
 ```
 
-Edit `.env` locally. Set `DJANGO_SECRET_KEY` to a private random value, then fill in `OZON_CLIENT_ID` and `OZON_API_KEY` if you want to test live synchronization. Never commit `.env` or paste marketplace credentials into source code.
+Откройте `.env` и замените `DJANGO_SECRET_KEY` на случайный секретный ключ. Если нужна синхронизация с Ozon, также укажите `OZON_CLIENT_ID` и `OZON_API_KEY`. Не добавляйте `.env` в Git и не публикуйте ключи.
 
-Create the local database and dashboard account:
+Создайте базу данных и учётную запись для входа:
 
 ```bash
 python manage.py migrate
 python manage.py createsuperuser
 ```
 
-Start the local server and open `http://127.0.0.1:8000/`:
+Запустите локальный сервер:
 
 ```bash
 python manage.py runserver
 ```
 
-Log in with the account created above. Add own-warehouse quantities in the dashboard. If Ozon credentials are configured, use **Загрузить заказы и остатки** to request data from Ozon.
+Откройте <http://127.0.0.1:8000/> и войдите с созданной учётной записью. В разделе «Собственный склад» можно добавлять или обновлять остатки вручную. Для загрузки заказов и остатков Ozon заполните `OZON_CLIENT_ID` и `OZON_API_KEY` в `.env`, перезапустите сервер и нажмите «Загрузить заказы и остатки».
 
-## Configuration
+## Настройки
 
-The project reads these values from `.env`:
+Приложение читает следующие переменные из `.env`:
 
-| Variable | Purpose |
+| Переменная | Назначение |
 | --- | --- |
-| `DJANGO_SECRET_KEY` | Django signing key. Use a private random value. |
-| `DJANGO_DEBUG` | Enables debug mode for local development; defaults to `true`. |
-| `DJANGO_ALLOWED_HOSTS` | Comma-separated allowed host names. |
-| `OZON_CLIENT_ID` | Ozon Seller API Client ID. |
-| `OZON_API_KEY` | Ozon Seller API key with read permissions for orders and stock information. |
+| `DJANGO_SECRET_KEY` | Секретный ключ Django. Укажите собственное случайное значение. |
+| `DJANGO_DEBUG` | Режим разработки Django; по умолчанию включён. |
+| `DJANGO_ALLOWED_HOSTS` | Разрешённые имена хостов через запятую. |
+| `OZON_CLIENT_ID` | Client ID из кабинета Ozon Seller API. |
+| `OZON_API_KEY` | API-ключ Ozon с правами чтения заказов и остатков. |
 
-The default database is a project-local SQLite file named `db.sqlite3`. The previous external MySQL database is not configured or contacted.
+По умолчанию используется локальная база `db.sqlite3`. Старое подключение к внешней базе MySQL отключено.
 
-## Tests
+## Проверки
+
+Запустите тесты командой:
 
 ```bash
 python manage.py test
 ```
 
-API tests use mocked responses and do not contact Ozon or require real credentials.
+Тесты API используют имитации ответов и не обращаются к Ozon. Для них не нужны реальные учётные данные.
 
-## MVP limits
+## Структура проекта
 
-- The integration is read-only and covers Ozon only. It does not change stock in a marketplace account.
-- The current stock endpoint groups balances by Ozon fulfillment type (FBO/FBS), not by each named warehouse.
-- Own-warehouse balances are entered manually.
-- The dashboard stores the latest stock state; it does not retain a historical stock timeline.
-- Wildberries, automatic cross-marketplace stock synchronization, multiple companies in one installation, and public deployment are outside this MVP.
-- Ozon API permissions, account data, and response formats can affect live synchronization. Tests validate application behavior against representative mocked responses, not a live seller account.
+- `cy19346/` — настройки Django и маршруты приложения.
+- `cy19346_project/` — модели базы данных, формы, представления, шаблоны и интеграция с Ozon.
+- `cy19346_project/integrations/ozon.py` — клиент Seller API для списка отправлений FBS и остатков.
+- `cy19346_project/services.py` — сохранение полученных данных в базе.
+- `cy19346_project/migrations/` — миграции схемы SQLite.
+
+## Ограничения MVP
+
+- Подключён только Ozon; Wildberries пока не реализован.
+- Для Ozon загружаются отправления FBS и остатки по типам исполнения FBO/FBS, а не по именам отдельных складов.
+- Остатки собственных складов вносятся вручную. Они хранятся только в приложении и не синхронизируются с маркетплейсами.
+- Приложение сохраняет последнее состояние остатков, но не ведёт их историю.
+- Тесты проверяют обработку данных на имитированных ответах; успешная работа с конкретным кабинетом Ozon зависит от прав API-ключа и ответов Seller API.
+- Публичное развёртывание и поддержка нескольких компаний в одной установке не входят в MVP.
